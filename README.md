@@ -491,5 +491,182 @@ Important considerations when developing production MCP applications:
 | `max_turns` | Maximum agent execution turns |
 
 ---
+## Important Code Concepts
+
+### 1. FastMCP – Creating an MCP Server
+
+```python
+mcp = FastMCP("My Server")
+
+@mcp.tool()
+@mcp.resource("tasks://all")
+@mcp.prompt()
+
+mcp.run(transport="stdio")
+```
+
+- `FastMCP()` – Creates an MCP server.
+- `@mcp.tool()` – Registers a tool.
+- `@mcp.resource()` – Registers a resource.
+- `@mcp.prompt()` – Registers a reusable prompt.
+- `mcp.run()` – Starts the server.
+
+### 2. MCPServerStdio – Local Server Connection
+
+```python
+params = {
+    "command": "npx",
+    "args": ["-y", "package-name"]
+}
+
+MCPServerStdio(
+    name="My Server",
+    params=params
+)
+```
+
+- `command` – Executable used to launch the server (`python`, `npx`).
+- `args` – Arguments passed to the executable.
+- `params` – Local server process configuration.
+- `name` – Server identifier.
+
+**Useful:** `sys.executable` launches the server using the current Python environment.
+
+### 3. MCPServerStreamableHttp – Remote Server Connection
+
+```python
+MCPServerStreamableHttp(
+    name="Remote Server",
+    params={
+        "url": "https://example.com/mcp",
+        "headers": {"Authorization": "Bearer TOKEN"}
+    }
+)
+```
+
+- `url` – Remote MCP endpoint.
+- `headers` – HTTP headers, commonly used for authentication.
+- Used to connect to HTTP-based MCP servers.
+
+### 4. Connection Management
+
+```python
+async with MCPServerStdio(...) as server:
+    ...
+```
+
+- `async with` – Manages connection lifecycle and closes the connection when the block exits.
+- Multiple servers can be connected using multiple context managers.
+
+```python
+mcp_servers=[server1, server2]
+```
+
+Registers multiple MCP servers with an agent.
+
+### 5. Agent – OpenAI Agents SDK
+
+```python
+agent = Agent(
+    name="Assistant",
+    instructions="Use available tools.",
+    model="gpt-4o-mini",
+    mcp_servers=[server]
+)
+```
+
+- `Agent()` – Creates an AI agent.
+- `instructions` – Defines agent behaviour.
+- `model` – Specifies the LLM.
+- `mcp_servers` – Connects MCP servers to the agent.
+
+### 6. Runner.run() and max_turns
+
+```python
+result = await Runner.run(
+    agent,
+    "Research a topic",
+    max_turns=20
+)
+
+result.final_output
+```
+
+- `Runner.run()` – Executes the agent.
+- `max_turns` – Maximum agent execution turns, not tool calls.
+- `final_output` – Contains the final agent response.
+
+### 7. Direct MCP Client Operations
+
+```python
+await session.initialize()
+
+tools = await session.list_tools()
+
+result = await session.call_tool(
+    "add",
+    arguments={"a": 10, "b": 20}
+)
+```
+
+Important methods:
+
+| Method | Purpose |
+|---|---|
+| `initialize()` | Initialize session |
+| `list_tools()` | Discover tools |
+| `call_tool()` | Execute a tool |
+| `list_resources()` | Discover resources |
+| `read_resource()` | Read a resource |
+| `list_prompts()` | Discover prompts |
+| `get_prompt()` | Retrieve a prompt |
+
+**Remember:** MCP tools can be called directly without an LLM.
+
+### 8. Important Python Concepts
+
+```python
+async def main():
+    result = await session.list_tools()
+
+asyncio.run(main())
+```
+
+- `async` – Defines an asynchronous function.
+- `await` – Waits for an asynchronous operation.
+- `asyncio.run()` – Runs the asynchronous program.
+
+```python
+from pathlib import Path
+
+BASE_DIR = Path(__file__).parent
+SANDBOX_DIR = BASE_DIR / "sandbox"
+SANDBOX_DIR.mkdir(exist_ok=True)
+```
+
+- `Path(__file__).parent` – Gets the current script's directory.
+- `mkdir(exist_ok=True)` – Creates a directory if it doesn't exist.
+
+```python
+report_path.write_text(report, encoding="utf-8")
+```
+
+Writes the report to a file.
+
+### 9. Important Parameter Distinctions
+
+| Parameter | Meaning |
+|---|---|
+| `command` | Executable to launch a local server |
+| `args` | Command-line arguments |
+| `env` | Server environment variables |
+| `cwd` | Server working directory |
+| `url` | Remote MCP endpoint |
+| `headers` | HTTP request headers |
+| `params` | Server connection/process configuration |
+| `arguments` | Actual values passed to a tool |
+| `max_turns` | Maximum agent execution turns |
+
+**Key distinction:** `MCPServerStdio` uses local process configuration (`command`, `args`), whereas `MCPServerStreamableHttp` uses HTTP configuration (`url`, `headers`).
 
 **Core takeaway:** MCP provides a standardized way for AI applications to discover and use external capabilities. Understanding its architecture, communication, transports, server development, tool execution and integration with agent frameworks is the foundation for building practical Agentic AI applications.
