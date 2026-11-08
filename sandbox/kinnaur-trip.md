@@ -1,4 +1,4 @@
-```markdown
+
 # Kinnaur Tourism Guide
 
 ## Introduction
