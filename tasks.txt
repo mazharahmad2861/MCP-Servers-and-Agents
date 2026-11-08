@@ -1,0 +1,3 @@
+Complete Python assignment
+Buy groceries
+Learn MCP tool execution
